@@ -406,7 +406,7 @@ then
     then
         FROM_DB_PORT_FLAG=""
     else
-        FROM_DB_PORT_FLAG="-p $FROM_DB_PORT"
+        FROM_DB_PORT_FLAG="--port=$FROM_DB_PORT"
     fi    
 fi
 # SET TO DB FLAGS
@@ -433,7 +433,7 @@ if [ -z $TO_DB_PORT ] || [ "$TO_DB_PORT" = "" ]
 then
     TO_DB_PORT_FLAG=""
 else
-    TO_DB_PORT_FLAG="-p $TO_DB_PORT"
+    TO_DB_PORT_FLAG="--port=$TO_DB_PORT"
 fi
 # SET OTHER DB FLAGS
 if [ $STRUCTURE -eq 1 ]
