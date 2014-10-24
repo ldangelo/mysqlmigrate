@@ -34,9 +34,11 @@ Here is a short summary of the options available.
     --from-user USER            the FROM_DB user
     --from-password PASS        the FROM_DB password
     --from-host HOST            the FROM_DB host
+    --from-port PORT            the FROM_DB port
     --to-user USER              the TO_DB user
     --to-password PASS          the TO_DB password
     --to-host HOST              the TO_DB host
+    --to-port PORT              the TO_DB port
 
 USAGE
 =====

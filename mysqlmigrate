@@ -34,11 +34,14 @@ function echoconf()
     echo "  from pass: "$FROM_DB_PASS
     echo "  from db:   "$FROM_DB
     echo "  from host: "$FROM_DB_HOST
+    echo "  from port: "$FROM_DB_PORT
     echo ""
     echo "  to user: "$TO_DB_USER
     echo "  to pass: "$TO_DB_PASS
     echo "  to db:   "$TO_DB
     echo "  to host: "$TO_DB_HOST
+    echo "  to port: "$TO_DB_PORT
+    
     echo ""
     echo "  find:    "$FIND
     echo "  replace: "$REPLACE
@@ -286,6 +289,11 @@ do
             FROM_DB_HOST=$1
             TO_DB_HOST=$1
             ;;
+        --port)
+            shift
+            FROM_DB_PORT=$1
+            TO_DB_PORT=$1
+            ;;
         --from-user)
             shift
             FROM_DB_USER=$1
@@ -297,6 +305,10 @@ do
         --from-host)
             shift
             FROM_DB_HOST=$1
+            ;;
+        --from-port)
+            shift
+            FROM_DB_PORT=$1
             ;;
         --from-db)
             shift
@@ -313,6 +325,10 @@ do
         --to-host)
             shift
             TO_DB_HOST=$1
+            ;;
+        --to-port)
+            shift
+            TO_DB_PORT=$1
             ;;
         --to-db)
             shift
@@ -386,6 +402,12 @@ then
         FROM_DB_HOST_FLAG="-h $FROM_DB_HOST"
         FROM_DB_HOSTNAME="@$FROM_DB_HOST"
     fi
+    if [ -z $FROM_DB_PORT ] || [ "$FROM_DB_PORT" = "" ]
+    then
+        FROM_DB_PORT_FLAG=""
+    else
+        FROM_DB_PORT_FLAG="-p $FROM_DB_PORT"
+    fi    
 fi
 # SET TO DB FLAGS
 if [ -z $TO_DB_PASS ] || [ "$TO_DB_PASS" = "" ]
@@ -406,6 +428,12 @@ then
 else
     TO_DB_HOST_FLAG="-h $TO_DB_HOST"
     TO_DB_HOSTNAME="@$TO_DB_HOST"
+fi
+if [ -z $TO_DB_PORT ] || [ "$TO_DB_PORT" = "" ]
+then
+    TO_DB_PORT_FLAG=""
+else
+    TO_DB_PORT_FLAG="-p $TO_DB_PORT"
 fi
 # SET OTHER DB FLAGS
 if [ $STRUCTURE -eq 1 ]
@@ -441,8 +469,8 @@ then
 fi
 
 # 1. compile flags
-MYSQL_FLAGS="$FROM_DB_USER_FLAG $FROM_DB_PASS_FLAG $FROM_DB_HOST_FLAG"
-MYSQLDUMP_FLAGS="$STRUCTURE_FLAG $FROM_DB_USER_FLAG $FROM_DB_PASS_FLAG $FROM_DB_HOST_FLAG"
+MYSQL_FLAGS="$FROM_DB_USER_FLAG $FROM_DB_PASS_FLAG $FROM_DB_HOST_FLAG $FROM_DB_PORT_FLAG"
+MYSQLDUMP_FLAGS="$STRUCTURE_FLAG $FROM_DB_USER_FLAG $FROM_DB_PASS_FLAG $FROM_DB_HOST_FLAG $FROM_DB_PORT_FLAG"
 
 # 2. take a dump
 # a. determine what file to use
@@ -575,20 +603,20 @@ then
     echo "Check if destination database $TO_DB_HOST_AND_DB exists..."
     if [ $TEST -eq 1 ]
     then
-        echo "  $ echo \"show databases\" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG | grep \"^$TO_DB$\" > /dev/null"
+        echo "  $ echo \"show databases\" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG | grep \"^$TO_DB$\" > /dev/null"
         # pretend we are dropping the DB
         test false
     else
-        echo "show databases" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG | grep "^$TO_DB$" > /dev/null
+        echo "show databases" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG | grep "^$TO_DB$" > /dev/null
     fi
     if [ $? -eq 0 ]
     then
         echo "Dropping destination database $TO_DB_HOST_AND_DB..."
         if [ $TEST -eq 1 ]
         then
-            echo "  $ echo \"drop database \`$TO_DB\`\" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG"
+            echo "  $ echo \"drop database \`$TO_DB\`\" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG"
         else
-            echo "drop database \`$TO_DB\`" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG
+            echo "drop database \`$TO_DB\`" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG
         fi
     fi
 
@@ -596,9 +624,9 @@ then
     echo "Creating destination database $TO_DB_HOST_AND_DB $TO_DB..."
     if [ $TEST -eq 1 ]
     then
-        echo "  $ echo \"create database \`$TO_DB\`\" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG"
+        echo "  $ echo \"create database \`$TO_DB\`\" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG"
     else
-        echo "create database \`$TO_DB\`" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG
+        echo "create database \`$TO_DB\`" | $mysql $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG
     fi
 
     if [ $? -ne 0 ]
@@ -651,9 +679,9 @@ if [ ! -z $FIND ] && [ ! -z $REPLACE ]
 then
     if [ $TEST -eq 1 ]
     then
-        echo "  $ (echo -e -n $IMPORT_FLAGS; cat $SOURCE_FILE) | sed \"s/$FIND/$REPLACE/g\" | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB"
+        echo "  $ (echo -e -n $IMPORT_FLAGS; cat $SOURCE_FILE) | sed \"s/$FIND/$REPLACE/g\" | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB"
     else
-        (echo -e -n $IMPORT_FLAGS; cat $SOURCE_FILE) | sed "s/$FIND/$REPLACE/g" | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB
+        (echo -e -n $IMPORT_FLAGS; cat $SOURCE_FILE) | sed "s/$FIND/$REPLACE/g" | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB
     fi
 else
     if [ $TEST -eq 1 ]
@@ -662,16 +690,16 @@ else
         then
             if [ $IGNORE_AUTO_INCREMENT -eq 1 ]
             then
-                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE | grep -v \"DEFINER\" | sed \"s/ AUTO_INCREMENT=[0-9]*//g\") | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB"
+                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE | grep -v \"DEFINER\" | sed \"s/ AUTO_INCREMENT=[0-9]*//g\") | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB"
             else
-                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE | grep -v \"DEFINER\") | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB"
+                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE | grep -v \"DEFINER\") | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB"
             fi
         else
             if [ $IGNORE_AUTO_INCREMENT -eq 1 ]
             then
-                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE | sed \"s/ AUTO_INCREMENT=[0-9]*//g\") | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB"
+                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE | sed \"s/ AUTO_INCREMENT=[0-9]*//g\") | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB"
             else
-                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB"
+                echo "  $ (echo $BOOT_DATA; cat $SOURCE_FILE) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB"
             fi
         fi
     else
@@ -679,16 +707,16 @@ else
         then
             if [ $IGNORE_AUTO_INCREMENT -eq 1 ]
             then
-                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE | grep -v "DEFINER" | sed "s/ AUTO_INCREMENT=[0-9]*//g"; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB
+                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE | grep -v "DEFINER" | sed "s/ AUTO_INCREMENT=[0-9]*//g"; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB
             else
-                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE | grep -v "DEFINER"; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB
+                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE | grep -v "DEFINER"; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB
             fi
         else
             if [ $IGNORE_AUTO_INCREMENT -eq 1 ]
             then
-                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE | sed "s/ AUTO_INCREMENT=[0-9]*//g"; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB
+                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE | sed "s/ AUTO_INCREMENT=[0-9]*//g"; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB
             else
-                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB
+                (IFS='%'; echo $BOOT_DATA; cat $SOURCE_FILE; unset IFS) | $mysql --default-character-set=utf8 $TO_DB_USER_FLAG $TO_DB_PASS_FLAG $TO_DB_HOST_FLAG $TO_DB_PORT_FLAG $TO_DB
             fi
         fi
     fi
